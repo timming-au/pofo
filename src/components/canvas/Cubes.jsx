@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import { useCursor, MeshReflectorMaterial } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { Vector3, Euler } from 'three'
-import { randHSL } from '@/helper'
+import { maths, randHSL } from '@/helper'
 
 export default function Blob({ route, ...props }) {
   class Pillar {
@@ -18,12 +18,13 @@ export default function Blob({ route, ...props }) {
       this.create()
     }
     cubeGen(y) {
+      let randPosMultiplier = 5
       let cube = {
-        rot: [0, Math.random() * Math.PI / 20 + this.rot[1], 0],
+        rot: [0, (Math.random() * Math.PI) / 20 + this.rot[1], 0],
         pos: [
-          (Math.random() * this.cubeSize) / 3 + this.pos[0],
+          (Math.random() * this.cubeSize) / randPosMultiplier + this.pos[0],
           y * this.cubeSize + this.pos[1] + this.cubeSize / 2,
-          (Math.random() * this.cubeSize) / 3 + this.pos[2],
+          (Math.random() * this.cubeSize) / randPosMultiplier + this.pos[2],
         ],
         size: [this.cubeSize, this.cubeSize, this.cubeSize],
         color: randHSL.noColor(),
@@ -50,36 +51,46 @@ export default function Blob({ route, ...props }) {
   class PillarFactory {
     pillars = []
     spawns = []
-    constructor(pos, rot, cubesPerPillar, pillarCount, cubeSize) {
+    constructor(pos, rot, minCubesPerPillar, maxCubesPerPillar, pillarCount, cubeSize) {
       this.pos = [pos[0], pos[1], pos[2]]
       this.rotation = [rot[0], rot[1], rot[2]]
-      this.cubesPerPillar = cubesPerPillar
+      this.minCubesPerPillar = minCubesPerPillar
+      this.maxCubesPerPillar = maxCubesPerPillar
       this.pillarCount = pillarCount
       this.cubeSize = cubeSize
       this.produce()
     }
     createSpawns() {
-      let r = this.cubeSize / 3
+      // random x distance between pillars
+      let r = this.cubeSize / 4
+      // x distance between pillars based on cube size
       let c = this.cubeSize + r
+      // x length based on pillar count, size & random distance
       let n = (this.pillarCount * c) / 2
+      let mid = this.pillarCount / 2
+      let midFloor = Math.floor(mid)
+      let zExponent = 0.6
       for (let i = 0; i < this.pillarCount; i++) {
+        let p = midFloor - i
+        let z = Math.abs(p - (Math.random() - 0.5))
+        let normalisedZ = Math.abs(p / midFloor)
+        let exponentZ = maths.ease.inQuad(Math.abs(normalisedZ)) / 2
+        console.log(exponentZ)
         this.spawns.push({
-          position:[
-            Math.random() * r + c * i - n + this.pos[0],
+          position: [
+            Math.random() * r + c * i - n + this.pos[0] + p * c * 0.6 * exponentZ,
             0 + this.pos[1],
-            this.pos[2] + Math.pow(Math.abs(this.pillarCount / 2 - i - Math.random()), 0.5),
-          ], 
-          rotation:[
-            this.rotation[0],
-            this.pillarCount / 2 - i,
-            this.rotation[2],
-          ]
-        }
-      )}
+            this.pos[2] + Math.pow(z, exponentZ),
+          ],
+          rotation: [this.rotation[0], (p * Math.PI) / midFloor / 3 + this.rotation[1], this.rotation[2]],
+        })
+      }
     }
     createPillars() {
       for (let i = 0; i < this.spawns.length; i++) {
-        this.pillars.push(new Pillar(this.spawns[i], this.cubesPerPillar, this.cubeSize))
+        this.pillars.push(
+          new Pillar(this.spawns[i], maths.between(this.minCubesPerPillar, this.maxCubesPerPillar), this.cubeSize),
+        )
       }
     }
     produce() {
@@ -141,7 +152,7 @@ export default function Blob({ route, ...props }) {
       let floorPos = [0, -4, 0]
       let floorSize = [30, 30]
       this.floor = new Floor(floorPos, floorSize)
-      this.pf = new PillarFactory([...floorPos], 5, 7, 0.5)
+      this.pf = new PillarFactory([...floorPos], [0, 0, 0], 6, 10, 25, 0.3)
     }
     getCubes() {
       return this.pf
