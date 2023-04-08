@@ -11,22 +11,21 @@ export default function Blob({ route, ...props }) {
     pos = [0, 0, 0]
     pillar = []
     cubesPerPillar = 5
-    cubeSize = 1
     constructor(position, cubesPerPillar, cubeSize) {
       this.pos = position
       this.cubesPerPillar = cubesPerPillar
-      this.cubeSize = cubeSize ? cubeSize : 1
+      this.cubeSize = cubeSize
       this.create()
     }
     cubeGen(y) {
       let cube = {
-        rotation: [0, Math.random() * Math.PI, 0],
+        rotation: [0, (Math.random() * Math.PI) / 20, 0],
         pos: [
-          Math.random() * 0.3 + this.pos[0],
-          y + this.pos[1] + this.cubeSize / 2,
-          Math.random() * 0.3 + this.pos[2],
+          (Math.random() * this.cubeSize) / 3 + this.pos[0],
+          y * this.cubeSize + this.pos[1] + this.cubeSize / 2,
+          (Math.random() * this.cubeSize) / 3 + this.pos[2],
         ],
-        size: [1, 1, 1],
+        size: [this.cubeSize, this.cubeSize, this.cubeSize],
         color: randHSL.pastel(),
       }
       return cube
@@ -50,33 +49,31 @@ export default function Blob({ route, ...props }) {
   }
   class PillarFactory {
     pillars = []
-    pillarCount = 5
-    cubesPerPillar = 5
+    pillarCount
+    cubesPerPillar
     spawnPositions = []
-    pos = [0, 0, 0]
-    cubeSize = 1
     constructor(pos, cubesPerPillar, pillarCount, cubeSize) {
       this.pos = [pos[0], pos[1], pos[2]]
       this.cubesPerPillar = cubesPerPillar
       this.pillarCount = pillarCount
-      this.cubeSize = cubeSize ? cubeSize : 1
+      this.cubeSize = cubeSize
       this.produce()
     }
     createSpawnPositions() {
-      let r = 0.3
+      let r = this.cubeSize / 3
       let c = this.cubeSize + r
       let n = (this.pillarCount * c) / 2
       for (let i = 0; i < this.pillarCount; i++) {
         this.spawnPositions.push([
           Math.random() * r + c * i - n + this.pos[0],
           0 + this.pos[1],
-          Math.random() * 2 - 1 + this.pos[2],
+          this.pos[2] + Math.pow(Math.abs(this.pillarCount / 2 - i - Math.random()), 0.5),
         ])
       }
     }
     createPillars() {
       for (let i = 0; i < this.spawnPositions.length; i++) {
-        this.pillars.push(new Pillar(this.spawnPositions[i], this.cubesPerPillar))
+        this.pillars.push(new Pillar(this.spawnPositions[i], this.cubesPerPillar, this.cubeSize))
       }
     }
     produce() {
@@ -138,7 +135,7 @@ export default function Blob({ route, ...props }) {
       let floorPos = [0, -4, 0]
       let floorSize = [30, 30]
       this.floor = new Floor(floorPos, floorSize)
-      this.pf = new PillarFactory([...floorPos], 5, 5)
+      this.pf = new PillarFactory([...floorPos], 5, 7, 0.5)
     }
     getCubes() {
       return this.pf

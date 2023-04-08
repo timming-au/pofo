@@ -4,6 +4,9 @@ export const randHSL = {
   },
   pastel: function(){
     return `hsl(${Math.floor(Math.random() * 360)}, ${Math.random() * 10 + 80}%, 75%)`
+  },
+  noColor: function(){
+    return `hsl(${Math.floor(Math.random() * 360)}, 0%, 100%)`
   }
   
 }
