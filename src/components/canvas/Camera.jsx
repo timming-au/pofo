@@ -1,11 +1,20 @@
 import { PerspectiveCamera } from '@react-three/drei'
 import { useThree, useFrame } from '@react-three/fiber'
 import gsap from 'gsap'
+import React from 'react'
 
 export default function Camera() {
   const { camera, pointer } = useThree()
+  /**
+   * @type {[x:number,y:number,z:number]}
+   */
   const targetPos = [0, 0, 10]
+
+  /**
+   * @type {[x:number,y:number]}
+   */
   const targetRot = [0, -0.3]
+
   function pan(friction) {
     let f = friction * 300
     let c = camera

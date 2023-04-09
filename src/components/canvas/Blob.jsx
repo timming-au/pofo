@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/router'
 import { useCursor, MeshDistortMaterial } from '@react-three/drei'
+import React from 'react'
 
 export default function Blob({ route, ...props }) {
   const router = useRouter()

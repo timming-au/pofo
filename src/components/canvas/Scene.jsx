@@ -11,7 +11,7 @@ export default function Scene({ children, ...props }) {
   // Everything defined in here will persist between route changes, only children are swapped
   const [dpr, setDpr] = useState(1)
   return (
-    <Canvas style={{ position: 'absolute', top: '0' }} {...props}>
+    <Canvas {...props}>
       <PerformanceMonitor onIncline={() => setDpr(window.devicePixelRatio)} onDecline={() => setDpr(1)}>
         <LightCube />
         <ambientLight intensity={0.01} />
