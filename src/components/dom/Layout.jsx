@@ -1,5 +1,7 @@
+import React, { Component } from 'react'
 import { useRef, forwardRef, useImperativeHandle } from 'react'
 
+// @ts-ignore
 const Layout = forwardRef(({ children, ...props }, ref) => {
   const localRef = useRef()
 

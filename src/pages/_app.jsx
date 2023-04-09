@@ -4,14 +4,17 @@ import Header from '@/config'
 import Layout from '@/components/dom/Layout'
 import Scroll from '@/templates/Scroll'
 import '@/styles/index.css'
+import React from 'react'
 
 const Scene = dynamic(() => import('@/components/canvas/Scene'), { ssr: true })
 
 export default function App({ Component, pageProps = { title: 'index' } }) {
-  const ref = useRef()
+  const ref = useRef(null)
   return (
     <>
       <Header title={pageProps.title} />
+      {/* 
+      // @ts-ignore */}
       <Layout ref={ref}>
         <span className='relative z-[99999999999]'>
           <Component {...pageProps} />

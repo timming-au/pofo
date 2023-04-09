@@ -1,5 +1,6 @@
 import dynamic from 'next/dynamic'
 import Instructions from '@/components/dom/Instructions'
+import React from 'react'
 
 const Zoop = dynamic(() => import('@/components/canvas/Cubes'), { ssr: false })
 
