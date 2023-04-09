@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/router'
 import { useCursor, MeshReflectorMaterial } from '@react-three/drei'
-import { useThree } from '@react-three/fiber'
-import { Vector3, Euler } from 'three'
+import { useFrame, useThree } from '@react-three/fiber'
+import { Vector3, Euler, Color, Object3D, DynamicDrawUsage } from 'three'
 import { maths, randHSL } from '@/helper'
+import React from 'react'
 
 export default function Blob({ route, ...props }) {
   class Pillar {
@@ -34,14 +35,7 @@ export default function Blob({ route, ...props }) {
     create() {
       for (let i = 0; i < this.cubesPerPillar; i++) {
         let cube = this.cubeGen(i)
-        let mesh = (
-          <mesh key={Pillar.key} rotation={new Euler(...cube.rot)} position={new Vector3(...cube.pos)}>
-            <boxGeometry args={[...cube.size]}></boxGeometry>
-            <meshLambertMaterial color={cube.color}></meshLambertMaterial>
-          </mesh>
-        )
-        Pillar.key += 1
-        this.pillar.push(mesh)
+        this.pillar.push(cube)
       }
     }
     get() {
@@ -75,7 +69,6 @@ export default function Blob({ route, ...props }) {
         let z = Math.abs(p - (Math.random() - 0.5))
         let normalisedZ = Math.abs(p / midFloor)
         let exponentZ = maths.ease.inQuad(Math.abs(normalisedZ)) / 2
-        console.log(exponentZ)
         this.spawns.push({
           position: [
             Math.random() * r + c * i - n + this.pos[0] + p * c * 0.6 * exponentZ,
@@ -126,13 +119,6 @@ export default function Blob({ route, ...props }) {
             maxDepthThreshold={1.4}
             color='#050505'
             metalness={0.4}
-            debug={0} /* Depending on the assigned value, one of the following channels is shown:
-      0 = no debug
-      1 = depth channel
-      2 = base channel
-      3 = distortion channel
-      4 = lod channel (based on the roughness)
-    */
             reflectorOffset={0} // Offsets the virtual camera that projects the reflection. Useful when the reflective surface is some distance from the object's origin (default = 0)
           />
         </mesh>
@@ -167,13 +153,81 @@ export default function Blob({ route, ...props }) {
       this.scene.background = new Color('rgb(0,0,0)')
     }
   }
+  function Instances({ spawnProps, dummy = new Object3D(), initialScale, maxScale }) {
+    const ref = useRef(null)
+    let needToScale = true
+    let scaleSpeed = 0.01
+
+    useEffect(() => {
+      for (let i = 0; i < spawnProps.length; i++) {
+        // Set initial positions of the dummy
+        dummy.position.set(...spawnProps[i].pos)
+        dummy.rotation.set(...spawnProps[i].rot)
+        dummy.scale.set(...spawnProps[i].size.map((s) => s * initialScale))
+        dummy.updateMatrix()
+
+        // Set matrix of instance
+        ref.current.setMatrixAt(i, dummy.matrix)
+        ref.current.setColorAt(i, new Color(spawnProps[i].color))
+      }
+
+      // Update the instance
+      ref.current.instanceMatrix.needsUpdate = true
+      ref.current.instanceMatrix.setUsage(DynamicDrawUsage)
+    })
+    useFrame((state, delta) => {
+      if (needToScale) {
+        for (let i = 0; i < spawnProps.length; i++) {
+          // get current index's matrix
+          ref.current.getMatrixAt(i, dummy.matrix)
+
+          // get target scale
+          let targetSize = new Vector3(...spawnProps[i].size.map((s) => s * maxScale))
+          let currentSize = dummy.scale
+
+          if (targetSize <= currentSize) {
+            // stop scaling
+            needToScale = false
+          } else {
+            // incase all cubes not at max scale
+            needToScale = true
+          }
+
+          // set scale
+          dummy.scale.set(
+            ...currentSize
+              .add(targetSize.subVectors(targetSize, currentSize).multiplyScalar(scaleSpeed * delta))
+              .toArray(),
+          )
+
+          // re-set other matrix props
+          dummy.position.set(...spawnProps[i].pos)
+          dummy.rotation.set(...spawnProps[i].rot)
+          dummy.updateMatrix()
+
+          // set matrix!
+          ref.current.setMatrixAt(i, dummy.matrix)
+        }
+        // tells the renderer that the instance matrix has changed and needs to be updated
+        ref.current.instanceMatrix.needsUpdate = true
+      }
+    })
+    return (
+      <instancedMesh ref={ref} args={[null, null, cubes.length]}>
+        <boxGeometry args={[1, 1, 1]}></boxGeometry>
+        <meshLambertMaterial></meshLambertMaterial>
+      </instancedMesh>
+    )
+  }
+
   const { scene } = useThree()
   let theScene = new TheScene(scene)
   let cubes = theScene.getCubes()
   let floor = theScene.getFloor()
+
   return (
     <>
-      {cubes}
+      <Instances spawnProps={cubes} initialScale={1.5} maxScale={3} />
       {floor}
     </>
   )
