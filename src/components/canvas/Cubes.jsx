@@ -98,7 +98,7 @@ export default function Blob({ route, ...props }) {
      */
     createSpawns() {
       // random x distance between pillars
-      let r = this.cubeSize / 4
+      let r = (this.cubeSize / 4) * INSTANCE_PROPS.maxScale
       // x distance between pillars based on cube size
       let c = this.cubeSize + r
       // x length based on pillar count, size & random distance
@@ -122,7 +122,7 @@ export default function Blob({ route, ...props }) {
             0 + this.pos[1],
             this.pos[2] + Math.pow(z, exponentZ),
           ],
-          rotation: [this.rotation[0], (p * Math.PI) / midFloor / 3 + this.rotation[1], this.rotation[2]],
+          rotation: [this.rotation[0], (p * Math.PI) / midFloor / 2 + this.rotation[1], this.rotation[2]],
         })
       }
     }
@@ -312,8 +312,12 @@ export default function Blob({ route, ...props }) {
 
   const MIN_CUBES_PER_PILLAR = 10
   const MAX_CUBES_PER_PILLAR = 15
-  const PILLAR_COUNT = 20
+  const PILLAR_COUNT = 21
   const CUBE_SIZE = 0.3
+  const INSTANCE_PROPS = {
+    initialScale: 0,
+    maxScale: 2.5,
+  }
 
   const { scene } = useThree()
   let theScene = new TheScene(scene)
@@ -322,7 +326,7 @@ export default function Blob({ route, ...props }) {
 
   return (
     <>
-      <Instances spawnProps={cubeProps} initialScale={1} maxScale={2.5} />
+      <Instances spawnProps={cubeProps} initialScale={0} maxScale={2.5} />
       {floor}
     </>
   )

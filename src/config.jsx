@@ -1,11 +1,12 @@
 import Head from 'next/head'
+import React from 'react'
 
-const titleDefault = 'React Three Next Starter'
-const url = 'https://react-three-next.vercel.app/'
-const description = 'The easiest and fastest way to create a 3D website using React Three Fiber and NextJS'
-const author = 'Author'
+const titleDefault = 'tim ming | web dev'
+const urlDefault = 'https://timming.dev'
+const description = 'Portfolio website of Tim Ming.'
+const author = 'Tim Ming'
 
-export default function Header({ title = titleDefault }) {
+export default function Header({ title = titleDefault, url = urlDefault }) {
   return (
     <Head>
       {/* Recommended Meta Tags */}
@@ -55,7 +56,7 @@ export default function Header({ title = titleDefault }) {
         documentation: https://dev.twitter.com/cards/getting-started
         Be sure validate your Twitter card markup on the documentation site. */}
       <meta name='twitter:card' content='summary' />
-      <meta name='twitter:site' content='@onirenaud' />
+      <meta name='twitter:site' content='@timmingg' />
     </Head>
   )
 }

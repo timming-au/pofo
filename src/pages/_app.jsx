@@ -8,11 +8,11 @@ import React from 'react'
 
 const Scene = dynamic(() => import('@/components/canvas/Scene'), { ssr: true })
 
-export default function App({ Component, pageProps = { title: 'index' } }) {
+export default function App({ Component, pageProps }) {
   const ref = useRef(null)
   return (
     <>
-      <Header title={pageProps.title} />
+      <Header {...pageProps} />
       {/* 
       // @ts-ignore */}
       <Layout ref={ref}>
@@ -23,7 +23,11 @@ export default function App({ Component, pageProps = { title: 'index' } }) {
          * Setting the event source to a shared parent allows both the dom and the canvas to receive events.
          * Since the event source is now shared, the canvas would block events, we prevent that with pointerEvents: none. */}
         {Component?.canvas && (
-          <Scene className='pointer-events-none' eventSource={ref} eventPrefix='client'>
+          <Scene
+            style={{ position: 'absolute', top: '0' }}
+            className='pointer-events-none'
+            eventSource={ref}
+            eventPrefix='client'>
             {Component.canvas(pageProps)}
           </Scene>
         )}
