@@ -1,4 +1,5 @@
 import { EffectComposer, Bloom, LUT } from '@react-three/postprocessing'
+import React from 'react'
 export default function Effects() {
   return (
     <EffectComposer disableNormalPass>

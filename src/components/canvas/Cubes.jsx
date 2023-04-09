@@ -8,9 +8,17 @@ import React from 'react'
 
 export default function Blob({ route, ...props }) {
   class Pillar {
-    static key = 0
+    /**
+     * @type {import("../types").CubeProps[]}
+     */
     pillar = []
     cubesPerPillar = 5
+    /**
+     *
+     * @param {{position:[x:number,y:number,z:number],rotation:[x:number,y:number,z:number]}} spawns - position & rotation of the pillar
+     * @param {number} cubesPerPillar - number of cubes in the pillar
+     * @param {number} cubeSize - size of the cube
+     */
     constructor(spawns, cubesPerPillar, cubeSize) {
       this.pos = spawns.position
       this.rot = spawns.rotation
@@ -18,42 +26,76 @@ export default function Blob({ route, ...props }) {
       this.cubeSize = cubeSize
       this.create()
     }
-    cubeGen(y) {
+    /**
+     * Generates cube properties
+     * @param {number} index
+     * @returns {import("../types").CubeProps}
+     */
+    cubePropsGen(index) {
       let randPosMultiplier = 5
-      let cube = {
+      /**
+       * @type {import("../types").CubeProps}
+       */
+      let cubeProps = {
         rot: [0, (Math.random() * Math.PI) / 20 + this.rot[1], 0],
         pos: [
           (Math.random() * this.cubeSize) / randPosMultiplier + this.pos[0],
-          y * this.cubeSize + this.pos[1] + this.cubeSize / 2,
+          index * this.cubeSize + this.pos[1] + this.cubeSize / 2,
           (Math.random() * this.cubeSize) / randPosMultiplier + this.pos[2],
         ],
-        size: [this.cubeSize, this.cubeSize, this.cubeSize],
+        // @ts-ignore
+        size: [this.cubeSize, this.cubeSize, this.cubeSize].map((x) => x + (Math.random() * x) / 3),
         color: randHSL.noColor(),
       }
-      return cube
+      return cubeProps
     }
+
+    /**
+     * Creates pillar array of cubes
+     */
     create() {
       for (let i = 0; i < this.cubesPerPillar; i++) {
-        let cube = this.cubeGen(i)
-        this.pillar.push(cube)
+        let cubeProps = this.cubePropsGen(i)
+        this.pillar.push(cubeProps)
       }
     }
+
+    /**
+     * Gets pillar array
+     * @returns {import("../types").CubeProps[]} pillar
+     */
     get() {
       return this.pillar
     }
   }
+
   class PillarFactory {
+    /**
+     * @type {Pillar[]}
+     */
     pillars = []
     spawns = []
-    constructor(pos, rot, minCubesPerPillar, maxCubesPerPillar, pillarCount, cubeSize) {
-      this.pos = [pos[0], pos[1], pos[2]]
-      this.rotation = [rot[0], rot[1], rot[2]]
+
+    /**
+     * @param {import("../types").FloorProps} floorProps - position of the floor to alter factoried Pillar position & rotation
+     * @param {number} minCubesPerPillar - minimum number of cubes in the pillar
+     * @param {number} maxCubesPerPillar - maximum number of cubes in the pillar
+     * @param {number} pillarCount - number of pillars
+     * @param {number} cubeSize - size of cube
+     */
+    constructor(floorProps, minCubesPerPillar, maxCubesPerPillar, pillarCount, cubeSize) {
+      this.pos = floorProps.position
+      this.rotation = floorProps.rotation
       this.minCubesPerPillar = minCubesPerPillar
       this.maxCubesPerPillar = maxCubesPerPillar
       this.pillarCount = pillarCount
       this.cubeSize = cubeSize
       this.produce()
     }
+
+    /**
+     * Creates pillar spawns
+     */
     createSpawns() {
       // random x distance between pillars
       let r = this.cubeSize / 4
@@ -63,12 +105,17 @@ export default function Blob({ route, ...props }) {
       let n = (this.pillarCount * c) / 2
       let mid = this.pillarCount / 2
       let midFloor = Math.floor(mid)
-      let zExponent = 0.6
       for (let i = 0; i < this.pillarCount; i++) {
         let p = midFloor - i
         let z = Math.abs(p - (Math.random() - 0.5))
+
+        // normalise z position component
         let normalisedZ = Math.abs(p / midFloor)
+
+        // ease out-in z position component like a parabola
         let exponentZ = maths.ease.inQuad(Math.abs(normalisedZ)) / 2
+
+        // add cube spawn to spawns array
         this.spawns.push({
           position: [
             Math.random() * r + c * i - n + this.pos[0] + p * c * 0.6 * exponentZ,
@@ -79,6 +126,10 @@ export default function Blob({ route, ...props }) {
         })
       }
     }
+
+    /**
+     * Push pillar instances
+     */
     createPillars() {
       for (let i = 0; i < this.spawns.length; i++) {
         this.pillars.push(
@@ -86,26 +137,36 @@ export default function Blob({ route, ...props }) {
         )
       }
     }
+
+    /**
+     * Generates spawns and pillar instances
+     */
     produce() {
       this.createSpawns()
       this.createPillars()
     }
+
+    /**
+     * Returns pillar array
+     * @returns {Pillar[]}
+     */
     get() {
       return this.pillars
     }
   }
   class Floor {
-    pos
-    size
-    mesh
-    constructor(position, size) {
-      this.pos = position
-      this.size = size
+    /**
+     * @param {import("../types").FloorProps} floorProps
+     */
+    constructor(floorProps) {
+      this.position = floorProps.position
+      this.rotation = floorProps.rotation
+      this.size = floorProps.size
       this.mesh = this.create()
     }
     create() {
       let floor = (
-        <mesh position={[...this.pos]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh position={this.position} rotation={this.rotation}>
           <planeGeometry args={[...this.size]}></planeGeometry>
           <MeshReflectorMaterial
             blur={[300, 100]} // Blur ground reflections (width, height), 0 skips blur
@@ -130,22 +191,24 @@ export default function Blob({ route, ...props }) {
     }
   }
   class TheScene {
-    scene
-    pf
-    floor
     constructor(scene) {
       this.scene = scene
-      let floorPos = [0, -4, 0]
-      let floorSize = [30, 30]
-      this.floor = new Floor(floorPos, floorSize)
-      this.pf = new PillarFactory([...floorPos], [0, 0, 0], 6, 10, 25, 0.3)
+      this.floor = new Floor(FLOOR_PROPS)
+      this.pf = new PillarFactory(FLOOR_PROPS, MIN_CUBES_PER_PILLAR, MAX_CUBES_PER_PILLAR, PILLAR_COUNT, CUBE_SIZE)
     }
-    getCubes() {
-      return this.pf
-        .get()
-        .map((pillar) => pillar.get())
-        .flat()
+
+    /**
+     * Returns flattened array of cubeProps
+     * @returns {import("../types").CubeProps[][]}
+     */
+    getCubesProps() {
+      return this.pf.get().map((pillar) => pillar.get())
     }
+
+    /**
+     * Returns floor object
+     * @returns {import('react').ReactElement}
+     */
     getFloor() {
       return this.floor.get()
     }
@@ -153,22 +216,31 @@ export default function Blob({ route, ...props }) {
       this.scene.background = new Color('rgb(0,0,0)')
     }
   }
+  /**
+   * Instancer
+   * @param {import("../types").instancerParams} params
+   * @returns {import('react').ReactElement}
+   */
   function Instances({ spawnProps, dummy = new Object3D(), initialScale, maxScale }) {
     const ref = useRef(null)
     let needToScale = true
     let scaleSpeed = 0.01
-
     useEffect(() => {
+      let index = 0
       for (let i = 0; i < spawnProps.length; i++) {
-        // Set initial positions of the dummy
-        dummy.position.set(...spawnProps[i].pos)
-        dummy.rotation.set(...spawnProps[i].rot)
-        dummy.scale.set(...spawnProps[i].size.map((s) => s * initialScale))
-        dummy.updateMatrix()
+        for (let j = 0, props = spawnProps[i]; j < props.length; j++) {
+          // Set initial positions of the dummy
+          dummy.position.set(...props[j].pos)
+          dummy.rotation.set(...props[j].rot)
+          // @ts-ignore
+          dummy.scale.set(...props[j].size.map((s) => s * initialScale))
+          dummy.updateMatrix()
 
-        // Set matrix of instance
-        ref.current.setMatrixAt(i, dummy.matrix)
-        ref.current.setColorAt(i, new Color(spawnProps[i].color))
+          // Set matrix of instance
+          ref.current.setMatrixAt(index, dummy.matrix)
+          ref.current.setColorAt(index, new Color(props[j].color))
+          index++
+        }
       }
 
       // Update the instance
@@ -177,57 +249,80 @@ export default function Blob({ route, ...props }) {
     })
     useFrame((state, delta) => {
       if (needToScale) {
+        let index = 0
         for (let i = 0; i < spawnProps.length; i++) {
-          // get current index's matrix
-          ref.current.getMatrixAt(i, dummy.matrix)
+          for (let j = 0, props = spawnProps[i]; j < props.length; j++) {
+            // get current index's matrix
+            ref.current.getMatrixAt(index, dummy.matrix)
 
-          // get target scale
-          let targetSize = new Vector3(...spawnProps[i].size.map((s) => s * maxScale))
-          let currentSize = dummy.scale
+            // get target scale
+            let targetSize = new Vector3(...props[j].size.map((s) => s * maxScale))
+            let currentSize = dummy.scale
 
-          if (targetSize <= currentSize) {
-            // stop scaling
-            needToScale = false
-          } else {
-            // incase all cubes not at max scale
-            needToScale = true
+            if (targetSize.x <= currentSize.x && targetSize.y <= currentSize.y && targetSize.z <= currentSize.z) {
+              // stop scaling
+              needToScale = false
+            } else {
+              // incase all cubes not at max scale
+              needToScale = true
+            }
+
+            // set scale
+            dummy.scale.set(
+              ...currentSize
+                .add(
+                  new Vector3()
+                    .subVectors(targetSize, currentSize)
+                    .add(targetSize.multiplyScalar(0.01))
+                    .multiplyScalar(scaleSpeed * delta),
+                )
+                .toArray(),
+            )
+
+            // re-set other matrix props
+            dummy.position.set(...props[j].pos)
+            dummy.rotation.set(...props[j].rot)
+            dummy.updateMatrix()
+
+            // set matrix!
+            ref.current.setMatrixAt(index, dummy.matrix)
+            index++
           }
-
-          // set scale
-          dummy.scale.set(
-            ...currentSize
-              .add(targetSize.subVectors(targetSize, currentSize).multiplyScalar(scaleSpeed * delta))
-              .toArray(),
-          )
-
-          // re-set other matrix props
-          dummy.position.set(...spawnProps[i].pos)
-          dummy.rotation.set(...spawnProps[i].rot)
-          dummy.updateMatrix()
-
-          // set matrix!
-          ref.current.setMatrixAt(i, dummy.matrix)
+          // tells the renderer that the instance matrix has changed and needs to be updated
+          ref.current.instanceMatrix.needsUpdate = true
         }
-        // tells the renderer that the instance matrix has changed and needs to be updated
-        ref.current.instanceMatrix.needsUpdate = true
       }
     })
     return (
-      <instancedMesh ref={ref} args={[null, null, cubes.length]}>
+      <instancedMesh ref={ref} args={[null, null, spawnProps.flat().length]}>
         <boxGeometry args={[1, 1, 1]}></boxGeometry>
         <meshLambertMaterial></meshLambertMaterial>
       </instancedMesh>
     )
   }
 
+  /**
+   * @type {import("../types").FloorProps}
+   */
+  const FLOOR_PROPS = {
+    position: [0, -4, 0],
+    rotation: [-Math.PI / 2, 0, 0],
+    size: [50, 50],
+  }
+
+  const MIN_CUBES_PER_PILLAR = 10
+  const MAX_CUBES_PER_PILLAR = 15
+  const PILLAR_COUNT = 20
+  const CUBE_SIZE = 0.3
+
   const { scene } = useThree()
   let theScene = new TheScene(scene)
-  let cubes = theScene.getCubes()
+  let cubeProps = theScene.getCubesProps()
   let floor = theScene.getFloor()
 
   return (
     <>
-      <Instances spawnProps={cubes} initialScale={1.5} maxScale={3} />
+      <Instances spawnProps={cubeProps} initialScale={1} maxScale={2.5} />
       {floor}
     </>
   )
